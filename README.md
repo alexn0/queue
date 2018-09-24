@@ -1,45 +1,24 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+## Library containing 2 implementations of queue: local filesystem and in-memory message queues
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+# Script to build the code:
+```sh
+./gradlew jar
+```
+### Description
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+####Architecture of the solution
 
----
+The algorithm we use is a modification of Michael & Scott's lock-free queue algorithm.
+Features of the solution:
+1) When we add element to the queue we choose the next "batch" element.
+2) When we call commit method we remove the committed element from queue by changing links of previous and next element so that the previous element points to the next element and vice versa.
+3) When we call fail method we consider 2 cases:
+  a) The failed element is the head object of queue - in this case we change the head object to point to the previous element.
+  b) Otherwise - we remove the element from queue by changing links of previous and next element and add it to the tail of the queue.
+4) When we poll elements from queue we first check if there are some non-committed old elements to readd them to the queue as we do for failed elements. After that we change the head of the queue to point to the nearest batch element and return list of elements, the batch element and all elements that are followed by this batch element.
+5) We reuse the above algorithm for local filesystem and memory based queue.
 
-## Edit a file
-
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
-
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
-
----
-
-## Create a file
-
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
-
----
-
-## Clone a repository
-
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
-
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
-
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+#### Disclaimer
+1) We don't remove files from filesystem when we remove elements from the local filesystem queue.
+2) If you run tests it will create a lot of files in temp directory.
+3) There seem to be left some bugs, so it is not recommended to use it anyhow.
