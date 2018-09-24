@@ -1,10 +1,11 @@
-## Library contains implementations of local filesystem and in-memory message queues
+## Implementations of local filesystem and in-memory message queues
 
-# Script to build the code:
+### Description
+
+#### Script to build the code:
 ```sh
 ./gradlew jar
 ```
-### Description
 
 ####Architecture of the solution
 
