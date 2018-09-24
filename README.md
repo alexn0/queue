@@ -1,6 +1,7 @@
 ## Implementations of local filesystem and in-memory message queues
 
 #### Script to build the code:
+
 ```sh
 ./gradlew jar
 ```
@@ -31,3 +32,7 @@ Steps of the algorithm:
 2) If you run tests it will create a lot of files in temp directory.
 
 3) There seem to be left some bugs, so it is not recommended to use it anyhow.
+
+#### License
+
+Copyright (C) 2017 alexn0. All rights reserved.
