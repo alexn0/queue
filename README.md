@@ -1,7 +1,5 @@
 ## Implementations of local filesystem and in-memory message queues
 
-### Description
-
 #### Script to build the code:
 ```sh
 ./gradlew jar
@@ -27,6 +25,9 @@ Steps of the algorithm:
 5) We reuse the above algorithm for local filesystem and memory based queue.
 
 #### Disclaimer
+
 1) We don't remove files from filesystem when we remove elements from the local filesystem queue.
+
 2) If you run tests it will create a lot of files in temp directory.
+
 3) There seem to be left some bugs, so it is not recommended to use it anyhow.
