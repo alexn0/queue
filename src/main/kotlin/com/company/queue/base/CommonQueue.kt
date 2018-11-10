@@ -80,22 +80,22 @@ open class CommonQueue<E>(
             if (node == getZero()) {
                 isContinue = false
             }
-            var status = node.status.get()
+            val status = node.status.get()
 
             if (status == NEW) {
-                if (node.compareAndSet(NEW, FAILURE)) {
-                    updateProcessedElement(node, now().minus(2 * timeout, ChronoUnit.MILLIS), prev)
-                } else {
-                    TimeUnit.MILLISECONDS.sleep(CommonNode.REMOVING_TIMEOUT)
-                    continue
+                node.inTransaction {
+                    if (this.compareAndSet(NEW, FAILURE)) {
+                        updateProcessedElement(this, now().minus(2 * timeout, ChronoUnit.MILLIS), prev)
+                        this.processFailure()
+                    }
                 }
+                continue
             } else if (status in resendingStatuses) {
                 if (node.isResentRecently() || !node.status.compareAndSet(status, FAILURE)) {
                     continue
                 }
             }
 
-            status = node.status.get()
             if (node.isFailedByTimeout()) {
                 node.queue = this
                 node.processFailure()
@@ -165,11 +165,10 @@ open class CommonQueue<E>(
     private fun getZero() = head.get()
     private fun getLast() = tail.get()
     private fun getFirstIfExistsOrNull(zero: Node<E> = getZero()) = zero.getNext()
-    private fun getNext(element: Node<E>) = element.getNext()!!
     private fun getLastProcessedElement() = processedElementsHead.get()
     private fun getNearestBatchElement(next: Node<E>): Node<E> {
         val nextBatch = next.nextBatch.get().get()!!
-        return if (next.counter.get() > nextBatch.counter.get()) next else nextBatch
+        return if (next.counter.get() > nextBatch.counter.get() || next.counter.get() == -1) next else nextBatch
     }
 
 }

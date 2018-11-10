@@ -11,83 +11,85 @@ import java.time.temporal.ChronoUnit.MILLIS
 abstract class CommonNode<E> : Node<E> {
 
     override fun inTransaction(block: Node<E>.() -> Unit) {
-        val started = now()
+        var started = now()
         outer@ while (true) {
-            timeoutChecks(this, started)
+            if (waitingTooLong(started)) {
+                started = now()
+                consistentChecks(this)
+            }
             val nextNode = next.get()
-            if (nextNode == null || (nextNode.lock.compareAndSet(null, this))) {
+            if (!isInDirtyState(nextNode) && getLockForNextNodeIfPresented(nextNode)) {
                 while (true) {
-                    if (lock.compareAndSet(null, this)) {
+                    if (!isInDirtyState(this) && getLockForCurrentNode()) {
+                        if (nextNode != next.get()) {
+                            started = now()
+                            releaseLocks(nextNode, this)
+                            continue@outer
+                        }
                         try {
-                            markDirty()
+                            markDirtyState()
                             block.invoke(this)
                             clearDirtyState(this, this.formerNextNode.get())
                         } finally {
-                            if (startedTransactionTime.get() != null) {
-                                unmarkDirty(this, true)
+                            if (isInDirtyState(this)) {
+                                unmarkDirtyState(this, true)
                             }
                         }
                         return
-                    } else {
-                        val lockNode = lock.get()
-                        if (lockNode != null) {
-                            if (lockNode.isIn(COMPLETED)) {
-                                lock.compareAndSet(lockNode, null)
-                            } else if (timeoutChecks(lockNode, started)) {
-                                nextNode?.lock?.compareAndSet(this, null)
-                                continue@outer
-                            }
-                        }
+                    } else if (nextNode != next.get()) {
+                        releaseLocks(nextNode, this, false)
+                        continue@outer
+                    } else if (waitingTooLong(started)) {
+                        started = now()
+                        lock.get()?.let { consistentChecks(it) }
+                        releaseLocks(nextNode, this, false)
+                        continue@outer
                     }
                 }
-            } else {
-                timeoutChecks(nextNode, started)
+            } else if (waitingTooLong(started)) {
+                started = now()
+                consistentChecks(nextNode!!)
             }
         }
     }
 
-    fun timeoutChecks(node: Node<E>, started: Instant): Boolean {
-        if (started.plus(50 * WAITING_TIMEOUT, MILLIS) < now()) {
-            throw RuntimeException("Exceeded waiting time in more then 50 times")
+    fun releaseLocks(node: Node<E>?, current: Node<E>, isCurrentToRelease: Boolean = true) {
+        node?.lock?.compareAndSet(current, null)
+        if (isCurrentToRelease) {
+            current.lock.compareAndSet(current, null)
         }
+    }
+
+    fun getLockForCurrentNode() = lock.compareAndSet(null, this)
+
+    fun getLockForNextNodeIfPresented(nextNode: Node<E>?) =
+            nextNode.let { it == null || (it.lock.compareAndSet(null, this)) }
+
+    fun waitingTooLong(started: Instant) = started.plus(TRANSACTION_WAITING_TIMEOUT, MILLIS) < now()
+
+    fun consistentChecks(node: Node<E>): Boolean {
         return if (isInconsistent(node)) {
-            unmarkDirty(node)
+            unmarkDirtyState(node)
             true
-        } else {
-            checkTimeout(started, node)
-        }
-    }
-
-    private fun checkTimeout(started: Instant, node: Node<E>): Boolean {
-        if (started.plus(WAITING_TIMEOUT, MILLIS) < now()) {
-            val lock = node.lock.get()
-            if (lock != null && node.next.get().let { it == null || it.lock.get() == lock }) {
-                if (lock.dirtyTransactionState.compareAndSet(false, true)) {
-                    lock.startedTransactionTime.set(now())
-                    unmarkDirty(node, true)
-                }
-                return true
-            }
-        }
-        return false
+        } else false
     }
 
     override fun processSuccess(force: Boolean) {
-        compareAndSet(SENT, CONFIRMED)
-        if (isIn(CONFIRMED) && (isNotSentRecently() || force)) {
-            sent.set(now())
-            if (compareAndSet(CONFIRMED, SENT) ) {
-                removeElement(CONFIRMED)
+        inTransaction {
+            compareAndSet(SENT, CONFIRMED)
+            if (isIn(CONFIRMED) && (isNotSentRecently() || force)) {
+                sent.set(now())
+                processRemovingElement()
             }
         }
     }
 
     override fun processFailure(force: Boolean) {
-        compareAndSet(SENT, FAILURE)
-        if (isIn(FAILURE)  && (isNotSentRecently() || force)) {
-            sent.set(now())
-            if (compareAndSet(FAILURE, SENT) ) {
-                removeElement(FAILURE)
+        inTransaction {
+            compareAndSet(SENT, FAILURE)
+            if (isIn(FAILURE) && (isNotSentRecently() || force)) {
+                sent.set(now())
+                processRemovingElement()
             }
         }
     }
@@ -103,14 +105,8 @@ abstract class CommonNode<E> : Node<E> {
 
     override fun compareAndSet(old: Status, new: Status) = status.compareAndSet(old, new)
 
-    private fun removeElement(status: Status) {
-        inTransaction {
-            processRemovingElement(status)
-        }
-    }
-
-    fun Node<E>.processRemovingElement(status: Status) {
-        this.status.set(status)
+    fun Node<E>.processRemovingElement() {
+        this.counter.set(-1)
         val nextNode = next.get()
         nextNode?.previous?.compareAndSet(this, formerPreviousNode.get())
         if (isIn(FAILURE)) {
@@ -140,7 +136,7 @@ abstract class CommonNode<E> : Node<E> {
         compareAndSet(CONFIRMED, COMPLETED)
     }
 
-    private fun markDirty() {
+    private fun markDirtyState() {
         startedTransactionTime.set(java.time.Instant.now())
         dirtyTransactionState.set(true)
         formerNextNode.set(next.get())
@@ -149,7 +145,7 @@ abstract class CommonNode<E> : Node<E> {
 
     companion object {
         const val REMOVING_TIMEOUT: Long = 2
-        const val WAITING_TIMEOUT: Long = 400
+        const val TRANSACTION_WAITING_TIMEOUT: Long = 2000
         const val PROCESSING_TIMEOUT: Long = 1000
 
         private fun <E> clearDirtyState(lockNode: Node<E>, formerNextNode: Node<E>?) {
@@ -161,6 +157,10 @@ abstract class CommonNode<E> : Node<E> {
             lockNode.startedTransactionTime.set(null)
         }
 
+        private fun <E> isInDirtyState(lockNode: Node<E>?): Boolean {
+            return lockNode != null && (lockNode.startedTransactionTime.get() != null)
+        }
+
         private fun <E> processFailureResentFinished(formerNextNode: Node<E>?, lockNode: Node<E>) {
             formerNextNode?.previous?.compareAndSet(lockNode.previous.get(), lockNode)
             lockNode.compareAndSet(RESENDING_FINISHED, COMPLETED)
@@ -170,7 +170,7 @@ abstract class CommonNode<E> : Node<E> {
                 && lockNode.dirtyTransactionState.get()
                 && (lockNode.startedTransactionTime.get()?.plus(times * REMOVING_TIMEOUT, MILLIS).let { it == null || it < now() })
 
-        private fun <E> unmarkDirty(lockNode: Node<E>, bypassLock: Boolean = false) {
+        private fun <E> unmarkDirtyState(lockNode: Node<E>, bypassLock: Boolean = false) {
             val formerNextNode = lockNode.formerNextNode.get()
 
             if (!bypassLock && !getTemporaryLock(lockNode)) return
@@ -200,16 +200,18 @@ abstract class CommonNode<E> : Node<E> {
 
         private fun <E> getTemporaryLock(lockNode: Node<E>): Boolean {
             var lock = false
-            if (isInconsistent(lockNode) && !isInconsistent(lockNode, 2)) {
-                val secondLock = lockNode.synchronisationStatus.compareAndSet(false, true)
-                if (secondLock && isInconsistent(lockNode)) {
+            while (true) {
+                if (lockNode.synchronisationStatus.get() == false && isInconsistent(lockNode)) {
                     lockNode.startedTransactionTime.set(now())
-                    lock = secondLock && lockNode.synchronisationStatus.compareAndSet(true, false)
+                    val secondLock = lockNode.synchronisationStatus.compareAndSet(false, true)
+                    if (secondLock) {
+                        lock = secondLock && lockNode.synchronisationStatus.compareAndSet(true, false)
+                    }
+                } else if (lockNode.synchronisationStatus.get() == false && isInconsistent(lockNode)) {
+                    lockNode.synchronisationStatus.compareAndSet(true, false)
+                    continue
                 }
-            }
-            if (isInconsistent(lockNode, 3)) {
-                lockNode.startedTransactionTime.set(now())
-                lockNode.synchronisationStatus.set(false)
+                break
             }
             return lock
         }
