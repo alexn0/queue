@@ -16,6 +16,7 @@ interface Node<E> {
     val synchronisationStatus: Atomic<Boolean>
     val nextBatch: Strict<Atomic<Node<E>?>>
     val counter: Strict<Int>
+    val created: Strict<Instant>
     val sent: Strict<Instant?>
     val resent: Strict<Instant?>
     val dirtyTransactionState: Atomic<Boolean>
@@ -36,7 +37,9 @@ interface Node<E> {
     fun isFailedByTimeout(): Boolean
     fun isNotSentRecently(): Boolean
     fun isNotResentRecently(): Boolean
+    fun isNotCreatedRecently(): Boolean
 
     fun isSentRecently(): Boolean = !isNotSentRecently()
     fun isResentRecently(): Boolean = !isNotResentRecently()
+    fun isCreatedRecently(): Boolean = !isNotCreatedRecently()
 }

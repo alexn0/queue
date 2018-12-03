@@ -83,15 +83,19 @@ open class CommonQueue<E>(
             val status = node.status.get()
 
             if (status == NEW) {
-                node.inTransaction {
-                    if (this.compareAndSet(NEW, FAILURE)) {
-                        updateProcessedElement(this, now().minus(2 * timeout, ChronoUnit.MILLIS), prev)
-                        this.processFailure()
+                if (node.isNotCreatedRecently()) {
+                    if (node.compareAndSet(NEW, FAILURE)) {
+                        node.inTransaction {
+                            updateProcessedElement(this, now().minus(2 * timeout, ChronoUnit.MILLIS), prev)
+                        }
+                        node.processFailure()
                     }
+                    continue
+                } else {
+                    return
                 }
-                continue
             } else if (status in resendingStatuses) {
-                if (node.isResentRecently() || !node.status.compareAndSet(status, FAILURE)) {
+                if (!node.status.compareAndSet(status, FAILURE)) {
                     continue
                 }
             }

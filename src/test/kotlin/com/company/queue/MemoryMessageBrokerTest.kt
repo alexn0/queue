@@ -90,10 +90,10 @@ class MemoryMessageBrokerTest {
     @Test(timeout = 20000)
     fun `check concurrent use of the queue`() {
         val hasException = AtomicBoolean(false)
-        val amountOfThread = 9
+        val amountOfThread = 12
 
         val barrier = CyclicBarrier(amountOfThread)
-        val latch = CountDownLatch(amountOfThread);
+        val latch = CountDownLatch(amountOfThread)
         val broker = CommonBrokerUtil.getMemoryBroker(1000)
         val queueWrapper = QueueWrapper(broker, CommonBrokerUtil.BASE_QUEUE_NAME)
         var i = 0

@@ -44,6 +44,7 @@ abstract class AbstractDiskNode(private val id: String,
     override val synchronisationStatus: Atomic<Boolean> by lazy { getAtomic(false, "synchronisationStatus") }
     override val nextBatch: Strict<Atomic<Node<BasicMessage>?>> by lazy { getStrictAtomicBatchElement() }
     override val counter: Strict<Int>  by lazy { getAtomic(-1, "counter") }
+    override val created: Strict<Instant>  = getAtomicNotNullInstant(Instant.now(), "created")
     override val sent: Strict<Instant?>  by lazy { getAtomicInstant(null, "sent") }
     override val resent: Strict<Instant?>  by lazy { getAtomicInstant(null, "resent") }
     override val dirtyTransactionState: Atomic<Boolean>  by lazy { getAtomic(false, "dirtyTransactionState") }
@@ -98,6 +99,14 @@ abstract class AbstractDiskNode(private val id: String,
 
         val converter = fun(value: String): Instant? =
                 if (value != NULL) Instant.parse(value) else null
+
+        return DiskAtomic(element, getFullPathOfField(name, nodeId), converter, toString)
+    }
+
+    private fun getAtomicNotNullInstant(element: Instant, name: String, nodeId: String = id): Atomic<Instant> {
+        val toString = fun(value: Instant): String = value.toString()
+
+        val converter = fun(value: String): Instant = Instant.parse(value)
 
         return DiskAtomic(element, getFullPathOfField(name, nodeId), converter, toString)
     }

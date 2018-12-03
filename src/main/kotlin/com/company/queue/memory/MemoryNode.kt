@@ -24,6 +24,7 @@ class MemoryNode<E>(override val item: E?,
     override val nextBatch: Strict<Atomic<Node<E>?>> = getStrict(getAtomic(next))
     override val counter: Strict<Int> = getStrict(-1)
     override val sent: Strict<Instant?> = getStrict(null)
+    override val created: Strict<Instant> = getStrict(Instant.now())
     override val resent: Strict<Instant?> = getStrict(null)
     override val dirtyTransactionState: Atomic<Boolean> = getAtomic(false)
     override val startedTransactionTime: Strict<Instant?> = getStrict(null)

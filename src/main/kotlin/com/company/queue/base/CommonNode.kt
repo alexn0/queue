@@ -99,7 +99,9 @@ abstract class CommonNode<E> : Node<E> {
 
     override fun isNotSentRecently() = sent.get()?.plus(timeout, MILLIS).let { it == null || it < now() }
 
-    override fun isNotResentRecently() = resent.get()?.plus(REMOVING_TIMEOUT, MILLIS).let { it == null || it < now() }
+    override fun isNotResentRecently() = resent.get()?.plus(timeout, MILLIS).let { it == null || it < now() }
+
+    override fun isNotCreatedRecently() = created.get().plus(timeout, MILLIS) < now()
 
     override fun isIn(vararg statuses: Status) = status.get() in statuses
 
@@ -116,13 +118,14 @@ abstract class CommonNode<E> : Node<E> {
             compareAndSet(FAILURE, RESENDING)
             resent.set(now())
             sent.set(null)
-            if (queue!!.head.get() != this) {
+            val q = queue!!
+            if (q.head.get() != this) {
                 next.set(null)
-                queue!!.put(this)
+                q.put(this)
             } else {
-                if (!queue!!.head.compareAndSet(this, previous.get()!!)) {
+                if (!q.head.compareAndSet(this, previous.get()!!)) {
                     next.set(null)
-                    queue!!.put(this)
+                    q.put(this)
                 } else {
                     nextNode?.previous?.compareAndSet(formerPreviousNode.get(), this)
                     compareAndSet(RESENDING, RESENDING_FINISHED_COMPLETED)
@@ -144,7 +147,7 @@ abstract class CommonNode<E> : Node<E> {
     }
 
     companion object {
-        const val REMOVING_TIMEOUT: Long = 2
+        const val REMOVING_TIMEOUT: Long = 20
         const val TRANSACTION_WAITING_TIMEOUT: Long = 2000
         const val PROCESSING_TIMEOUT: Long = 1000
 
@@ -166,9 +169,9 @@ abstract class CommonNode<E> : Node<E> {
             lockNode.compareAndSet(RESENDING_FINISHED, COMPLETED)
         }
 
-        private fun <E> isInconsistent(lockNode: Node<E>?, times: Int = 1) = lockNode != null
+        private fun <E> isInconsistent(lockNode: Node<E>?) = lockNode != null
                 && lockNode.dirtyTransactionState.get()
-                && (lockNode.startedTransactionTime.get()?.plus(times * REMOVING_TIMEOUT, MILLIS).let { it == null || it < now() })
+                && (lockNode.startedTransactionTime.get()?.plus(REMOVING_TIMEOUT, MILLIS).let { it == null || it < now() })
 
         private fun <E> unmarkDirtyState(lockNode: Node<E>, bypassLock: Boolean = false) {
             val formerNextNode = lockNode.formerNextNode.get()
