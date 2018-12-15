@@ -17,7 +17,7 @@ open class DiskStrict<E>(value: E,
 
     init {
         if (!Files.exists(path)) {
-            path.getParent().toFile().mkdirs()
+            path.parent.toFile().mkdirs()
             set(value, true)
         } else {
             get(true)
@@ -52,15 +52,15 @@ open class DiskStrict<E>(value: E,
             }
             val lockPath = Paths.get(path.toString() + ".lock")
             var res: E
-            var started = now()
+            val started = now()
 
             while (true) {
                 if (started.plus(LOCK_WAITING_TIME, ChronoUnit.MILLIS) < now()) {
-                    throw RuntimeException("Exceeded waiting time in getting file lock");
+                    throw RuntimeException("Exceeded waiting time in getting file lock")
                 }
                 if (Files.exists(lockPath) && !Files.isDirectory(lockPath)) {
                     val randomAccessFile = RandomAccessFile(lockPath.toFile(), "rw")
-                    val fc = randomAccessFile.getChannel()
+                    val fc = randomAccessFile.channel
                     randomAccessFile.use {
                         fc.use {
                             var fileLock: FileLock? = null

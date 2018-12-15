@@ -4,6 +4,7 @@ import com.company.queue.base.*
 import java.time.Instant
 
 import com.company.queue.base.Status.*
+import com.company.queue.base.TransactionWrapper.PROCESSING_TIMEOUT
 
 class MemoryNode<E>(override val item: E?,
                     next: Node<E>?,
@@ -33,4 +34,5 @@ class MemoryNode<E>(override val item: E?,
     override val temporaryPreviousNode: Strict<Node<E>?> = getStrict(null)
 
     override fun getAtomicBatchElement(node: Node<E>?): Atomic<Node<E>?> = getAtomic(node)
+
 }

@@ -5,10 +5,12 @@ import com.company.queue.base.*
 import java.time.Instant
 
 import com.company.queue.base.Status.*
+import com.company.queue.base.TransactionWrapper.PROCESSING_TIMEOUT
 import com.company.queue.memory.MemoryAtomic
+import java.nio.file.Files
 import java.nio.file.Path
 
-abstract class AbstractDiskNode(private val id: String,
+abstract class AbstractDiskNode(val id: String,
                                 val baseDir: Path,
                                 private val localNext: Node<BasicMessage>?,
                                 override var queue: BasicQueue<BasicMessage>?,
@@ -59,7 +61,7 @@ abstract class AbstractDiskNode(private val id: String,
 
     private fun getStrictAtomicBatchElement(): Strict<Atomic<Node<BasicMessage>?>> {
         val toString = fun(value: Atomic<Node<BasicMessage>?>): String = if (value is DiskAtomic) {
-            value.path.getParent().getFileName().toString()
+            value.path.parent.fileName.toString()
         } else NULL
 
         val toObject = fun(value: String): Atomic<Node<BasicMessage>?> = if (value != NULL) {

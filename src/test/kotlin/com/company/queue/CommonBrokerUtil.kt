@@ -1,6 +1,6 @@
-package com.company.queue;
+package com.company.queue
 
-import com.company.queue.base.CommonNode.Companion.PROCESSING_TIMEOUT
+import com.company.queue.base.TransactionWrapper.PROCESSING_TIMEOUT
 import org.junit.Assert.assertEquals
 import java.nio.file.Files
 import java.nio.file.Path

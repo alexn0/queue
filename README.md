@@ -21,7 +21,7 @@ Steps of the algorithm:
 
   b) Otherwise - we remove the element from queue by changing links of previous and next element and add it to the tail of the queue.
 
-4) When we poll elements from the queue we first check if there are some non-committed old elements to readd them to the queue as we do for failed elements. After that we change the head of the queue to point to the nearest batch element and return list of elements, the batch element and all elements that are followed by this batch element.
+4) When we poll elements from the queue we first check if there are some non-committed old elements to read them to the queue as we do for failed elements. After that we change the head of the queue to point to the nearest batch element and return list of elements, the batch element and all elements that are followed by this batch element.
 
 5) We reuse the above algorithm for local filesystem and memory based queues.
 

@@ -67,9 +67,9 @@ class DiskMessageBrokerTest {
 
     @Test(timeout = 10000)
     fun `disk queue is simply working`() {
-        val brocker = CommonBrokerUtil.getDiskBroker(300, CommonBrokerUtil.getTempDir())
+        val brocker = CommonBrokerUtil.getDiskBroker(30, CommonBrokerUtil.getTempDir())
         val set = HashSet<String>()
-        val amount = 1000
+        val amount = 100
         for (i in 0..amount - 1) {
             set.add(brocker.send(CommonBrokerUtil.BASE_QUEUE_NAME, i.toString()))
         }
@@ -93,9 +93,9 @@ class DiskMessageBrokerTest {
     @Test(timeout = 10000)
     fun `disk based queue is working after restart`() {
         val path = CommonBrokerUtil.getTempDir()
-        val firstBroker = DiskMessageBroker(path, 300)
+        val firstBroker = DiskMessageBroker(path, 30)
         val set = HashSet<String>()
-        val amount = 1000
+        val amount = 100
         for (i in 0..amount - 1) {
             set.add(firstBroker.send(CommonBrokerUtil.BASE_QUEUE_NAME, i.toString()))
         }
@@ -110,7 +110,7 @@ class DiskMessageBrokerTest {
             }
         }
         Assert.assertNotEquals(0, set.size)
-        val secondBroker = DiskMessageBroker(path, 300)
+        val secondBroker = DiskMessageBroker(path, 30)
         val lastMessages = secondBroker.receive(CommonBrokerUtil.BASE_QUEUE_NAME)
         for (message in lastMessages) {
             if (message.id in set) {

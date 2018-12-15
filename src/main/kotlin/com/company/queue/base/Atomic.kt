@@ -1,4 +1,4 @@
-package com.company.queue.base;
+package com.company.queue.base
 
 /**
  * Created by remote on 9/15/18.

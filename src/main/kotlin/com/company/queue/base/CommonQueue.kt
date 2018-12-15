@@ -1,10 +1,8 @@
 package com.company.queue.base
 
 import com.company.queue.base.Status.*
-import java.nio.file.Path
 import java.time.Instant.now
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by remote on 9/10/18.
@@ -13,15 +11,14 @@ open class CommonQueue<E>(
         override val head: Atomic<Node<E>>,
         private val tail: Atomic<Node<E>>,
         private val processedElementsHead: Atomic<Node<E>>,
-        private val createNode: (E?, Node<E>?, Long, Path?) -> Node<E>,
+        private val createNode: (E?, Node<E>?, Long) -> Node<E>,
         private val timeout: Long = 1000,
-        private val batchSize: Int = 300,
-        private val dir: Path? = null) : BasicQueue<E> {
+        private val batchSize: Int = 300) : BasicQueue<E> {
 
     val resendingStatuses = arrayOf(RESENDING, RESENDING_FINISHED, RESENDING_FINISHED_COMPLETED)
 
     fun put(item: E) {
-        val newNode = createNode(item, null, timeout, dir)
+        val newNode = createNode(item, null, timeout)
         put(newNode)
     }
 
@@ -139,19 +136,18 @@ open class CommonQueue<E>(
         node.resent.set(null)
         node.previous.compareAndSet(null, previous)
         node.queue = this
-        if (node.getNext() != null) {
-            node.getNext()!!.previous.set(node)
-        }
+        node.getNext()?.previous?.set(node)
         return node
     }
 
     fun updateBatchCounters(newNode: Node<E>, curTail: Node<E>, batchSize: Int) {
         with(newNode) {
             counter.set(curTail.counter.get() + 1)
-            if (counter.get() >= batchSize) {
+            val currentValue = counter.get()
+            if (currentValue >= batchSize) {
                 nextBatch.set(getAtomicBatchElement(this))
                 counter.set(0)
-            } else if (counter.get() > 0) {
+            } else if (currentValue > 0) {
                 nextBatch.set(curTail.nextBatch.get())
             } else {
                 nextBatch.set(getAtomicBatchElement(this))

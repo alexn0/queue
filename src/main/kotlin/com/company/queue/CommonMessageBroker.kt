@@ -12,8 +12,7 @@ abstract class CommonMessageBroker : MessageBroker<CommonMessage> {
         if (!map.containsKey(queueName)) {
             map.putIfAbsent(queueName, createBasicQueue(queueName))
         }
-        val queue = map[queueName]!!
-        return queue
+        return map[queueName]!!
     }
 
     abstract protected fun createBasicQueue(queueName: String): BaseQueue<BasicMessage>
