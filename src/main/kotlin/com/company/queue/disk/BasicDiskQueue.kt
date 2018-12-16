@@ -6,7 +6,7 @@ import java.nio.file.Path
 
 
 /**
- * Created by remote on 9/10/18.
+ * Created by alexn0 on 9/10/18.
  */
 open class BasicDiskQueue(private val baseDir: Path,
                           batchSize: Int,

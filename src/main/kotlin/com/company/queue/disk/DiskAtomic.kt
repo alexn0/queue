@@ -4,7 +4,7 @@ import com.company.queue.base.Atomic
 import java.nio.file.*
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 open class DiskAtomic<E>(value: E,
                          path: Path,

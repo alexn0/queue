@@ -5,7 +5,7 @@ import java.time.Instant.now
 import java.time.temporal.ChronoUnit.MILLIS
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 abstract class CommonNode<E> : Node<E> {
 

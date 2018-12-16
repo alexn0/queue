@@ -1,7 +1,7 @@
 package com.company.queue.base
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 interface BasicQueue<E> {
     val head: Atomic<Node<E>>

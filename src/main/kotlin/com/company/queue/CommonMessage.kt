@@ -4,7 +4,7 @@ import com.company.Message
 import com.company.queue.base.Node
 
 /**
- * Created by remote on 9/10/18.
+ * Created by alexn0 on 9/10/18.
  */
 class CommonMessage(private val node: Node<BasicMessage>,
                     override val id: String = node.item!!.id,

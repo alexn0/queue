@@ -3,7 +3,7 @@ package com.company.queue.memory
 import com.company.queue.base.*
 
 /**
- * Created by remote on 9/10/18.
+ * Created by alexn0 on 9/10/18.
  */
 open class MemoryQueue<E>(batchSize: Int, private val commonQueue: CommonQueue<E> = MemoryQueue.build(batchSize)) : BaseQueue<E> {
 

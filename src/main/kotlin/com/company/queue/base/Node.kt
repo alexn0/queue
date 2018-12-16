@@ -3,7 +3,7 @@ package com.company.queue.base
 import java.time.Instant
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 interface Node<E> {
     //content

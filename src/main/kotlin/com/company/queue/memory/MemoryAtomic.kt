@@ -4,7 +4,7 @@ import com.company.queue.base.Atomic
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 class MemoryAtomic<E>(value: E) : Atomic<E> {
     private val atomicValue: AtomicReference<E> = AtomicReference(value)

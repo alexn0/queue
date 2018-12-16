@@ -8,7 +8,7 @@ import java.time.Instant.now
 import java.time.temporal.ChronoUnit
 
 /**
- * Created by remote on 9/15/18.
+ * Created by alexn0 on 9/15/18.
  */
 open class DiskStrict<E>(value: E,
                          val path: Path,

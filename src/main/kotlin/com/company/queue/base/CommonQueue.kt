@@ -5,7 +5,7 @@ import java.time.Instant.now
 import java.time.temporal.ChronoUnit
 
 /**
- * Created by remote on 9/10/18.
+ * Created by alexn0 on 9/10/18.
  */
 open class CommonQueue<E>(
         override val head: Atomic<Node<E>>,
