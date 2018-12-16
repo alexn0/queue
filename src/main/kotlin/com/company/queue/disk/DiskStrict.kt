@@ -44,7 +44,7 @@ open class DiskStrict<E>(value: E,
     }
 
     companion object {
-        const val LOCK_WAITING_TIME: Long = 3000
+        private const val LOCK_WAITING_TIME: Long = 3000
 
         fun <E> execute(path: Path, isInLock: Boolean, operation: () -> E): E {
             if (!isInLock) {
@@ -73,9 +73,7 @@ open class DiskStrict<E>(value: E,
                                     return res
                                 }
                             } finally {
-                                if (fileLock != null) {
-                                    fileLock.release()
-                                }
+                                fileLock?.release()
                             }
                         }
                     }

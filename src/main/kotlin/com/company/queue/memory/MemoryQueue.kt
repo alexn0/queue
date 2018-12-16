@@ -7,7 +7,7 @@ import com.company.queue.base.*
  */
 open class MemoryQueue<E>(batchSize: Int, private val commonQueue: CommonQueue<E> = MemoryQueue.build(batchSize)) : BaseQueue<E> {
 
-    override fun load(): List<Node<E>> = commonQueue.poll().map { it }.toList()
+    override fun load(): List<Node<E>> = commonQueue.poll().asSequence().toList()
 
     override fun put(item: E) = commonQueue.put(item)
 

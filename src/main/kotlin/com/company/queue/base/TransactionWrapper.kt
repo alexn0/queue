@@ -5,26 +5,26 @@ import java.time.temporal.ChronoUnit
 
 object TransactionWrapper {
     @JvmStatic
-    val isStarted = ThreadLocal.withInitial({false})
-    const val REMOVING_TIMEOUT: Long = 20
-    const val TRANSACTION_WAITING_TIMEOUT: Long = 2000
+    private val isStarted = ThreadLocal.withInitial { false }
+    private const val REMOVING_TIMEOUT: Long = 20
+    private const val TRANSACTION_WAITING_TIMEOUT: Long = 2000
     const val PROCESSING_TIMEOUT: Long = 1000
 
     @JvmStatic
     fun <E> inTransaction(currentNode: Node<E>, block: Node<E>.() -> Unit) {
-       if (isStarted.get()) {
-           block.invoke(currentNode)
-           return
-       }
-       try {
-           isStarted.set(true)
-           executeInTransaction(currentNode, block)
-       } finally {
-           isStarted.set(false)
-       }
+        if (isStarted.get()) {
+            block.invoke(currentNode)
+            return
+        }
+        try {
+            isStarted.set(true)
+            executeInTransaction(currentNode, block)
+        } finally {
+            isStarted.set(false)
+        }
     }
 
-    fun <E> executeInTransaction(currentNode: Node<E>, block: Node<E>.() -> Unit) {
+    private fun <E> executeInTransaction(currentNode: Node<E>, block: Node<E>.() -> Unit) {
         var started = Instant.now()
         outer@ while (true) {
             if (waitingTooLong(started, currentNode.timeout)) {
@@ -68,7 +68,7 @@ object TransactionWrapper {
     }
 
 
-    private fun <E> getLockForNextNodeIfPresented(nextNode: Node<E>?, node:  Node<E>) =
+    private fun <E> getLockForNextNodeIfPresented(nextNode: Node<E>?, node: Node<E>) =
             nextNode.let { it == null || (it.lock.compareAndSet(null, node)) }
 
 
@@ -89,10 +89,12 @@ object TransactionWrapper {
 
 
     private fun <E> markDirtyState(node: Node<E>) {
-        node.startedTransactionTime.set(java.time.Instant.now())
-        node.dirtyTransactionState.set(true)
-        node.formerNextNode.set(node.next.get())
-        node.formerPreviousNode.set(node.previous.get())
+        with(node) {
+            startedTransactionTime.set(java.time.Instant.now())
+            dirtyTransactionState.set(true)
+            formerNextNode.set(next.get())
+            formerPreviousNode.set(previous.get())
+        }
     }
 
 
@@ -102,12 +104,14 @@ object TransactionWrapper {
 
 
     private fun <E> clearDirtyState(lockNode: Node<E>, formerNextNode: Node<E>?) {
-        lockNode.formerNextNode.set(null)
-        lockNode.formerPreviousNode.set(null)
-        lockNode.lock.compareAndSet(lockNode, null)
-        formerNextNode?.lock?.compareAndSet(lockNode, null)
-        lockNode.dirtyTransactionState.set(false)
-        lockNode.startedTransactionTime.set(null)
+        with(lockNode) {
+            this.formerNextNode.set(null)
+            formerPreviousNode.set(null)
+            lock.compareAndSet(this, null)
+            formerNextNode?.lock?.compareAndSet(this, null)
+            dirtyTransactionState.set(false)
+            startedTransactionTime.set(null)
+        }
     }
 
 
@@ -119,7 +123,7 @@ object TransactionWrapper {
 
     private fun <E> isInconsistent(lockNode: Node<E>?) = lockNode != null
             && lockNode.dirtyTransactionState.get()
-            && (lockNode.startedTransactionTime.get()?.plus(minOf(REMOVING_TIMEOUT, lockNode.timeout/10), ChronoUnit.MILLIS).let { it == null || it < Instant.now() })
+            && (lockNode.startedTransactionTime.get()?.plus(minOf(REMOVING_TIMEOUT, lockNode.timeout / 10), ChronoUnit.MILLIS).let { it == null || it < Instant.now() })
 
 
     private fun <E> unmarkDirtyState(lockNode: Node<E>, bypassLock: Boolean = false) {
@@ -128,7 +132,7 @@ object TransactionWrapper {
         if (!bypassLock && !getTemporaryLock(lockNode)) return
 
         when (lockNode.status.get()) {
-            Status.CONFIRMED -> if (lockNode.previous.get().let { it != null &&  it.next.get() != formerNextNode }) {
+            Status.CONFIRMED -> if (lockNode.previous.get().let { it != null && it.next.get() != formerNextNode }) {
                 formerNextNode?.previous?.set(lockNode)
             } else {
                 lockNode.compareAndSet(Status.CONFIRMED, Status.COMPLETED)

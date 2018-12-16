@@ -13,13 +13,13 @@ Steps of the algorithm:
 
 1) When we add an element to the queue we choose the next "batch" element.
 
-2) When we call the commit method we remove the committed element from queue by changing links of the previous and the next element so that the previous element points to the next element and vice versa.
+2) When we call the commit method we remove the committed element from queue by changing links of its previous and next elements so that the previous element points to the next element and vice versa.
 
 3) When we call the fail method we consider 2 cases:
 
   a) The failed element is the head object of queue - in this case we change the head object to point to the previous element.
 
-  b) Otherwise - we remove the element from queue by changing links of previous and next element and add it to the tail of the queue.
+  b) Otherwise - we remove the element from queue by changing links of its previous and next elements and add it to the tail of the queue.
 
 4) When we poll elements from the queue we first check if there are some non-committed old elements to read them to the queue as we do for failed elements. After that we change the head of the queue to point to the nearest batch element and return list of elements, the batch element and all elements that are followed by this batch element.
 
@@ -31,8 +31,8 @@ Steps of the algorithm:
 
 2) If you run tests it will create a lot of files in temp directory.
 
-3) There seem to be left some bugs, so it is not recommended to use it anyhow.
+3) There could be some bugs, so it is not recommended to use it anyhow.
 
 #### License
 
-Copyright (C) 2017 alexn0. All rights reserved.
+Copyright (C) 2018 alexn0. All rights reserved.

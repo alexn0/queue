@@ -21,8 +21,6 @@ dependencies {
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
-test.testClassesDir = project.tasks.compileTestKotlin.destinationDir
-
 task wrapper(type: Wrapper) {
     gradleVersion="4.1"
 }

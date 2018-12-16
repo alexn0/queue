@@ -7,7 +7,6 @@ import java.time.Instant
 import com.company.queue.base.Status.*
 import com.company.queue.base.TransactionWrapper.PROCESSING_TIMEOUT
 import com.company.queue.memory.MemoryAtomic
-import java.nio.file.Files
 import java.nio.file.Path
 
 abstract class AbstractDiskNode(val id: String,
@@ -30,7 +29,7 @@ abstract class AbstractDiskNode(val id: String,
         }
     }
 
-    protected val bodyWrapped: Strict<String> by lazy {
+    private val bodyWrapped: Strict<String> by lazy {
         DiskStrict(item?.body ?: id, getFullPathOfField("body", id), Id(), Id())
     }
 
@@ -46,7 +45,7 @@ abstract class AbstractDiskNode(val id: String,
     override val synchronisationStatus: Atomic<Boolean> by lazy { getAtomic(false, "synchronisationStatus") }
     override val nextBatch: Strict<Atomic<Node<BasicMessage>?>> by lazy { getStrictAtomicBatchElement() }
     override val counter: Strict<Int>  by lazy { getAtomic(-1, "counter") }
-    override val created: Strict<Instant>  = getAtomicNotNullInstant(Instant.now(), "created")
+    override val created: Strict<Instant> = getAtomicNotNullInstant(Instant.now(), "created")
     override val sent: Strict<Instant?>  by lazy { getAtomicInstant(null, "sent") }
     override val resent: Strict<Instant?>  by lazy { getAtomicInstant(null, "resent") }
     override val dirtyTransactionState: Atomic<Boolean>  by lazy { getAtomic(false, "dirtyTransactionState") }

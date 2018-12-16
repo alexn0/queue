@@ -46,7 +46,7 @@ abstract class CommonNode<E> : Node<E> {
 
     override fun compareAndSet(old: Status, new: Status) = status.compareAndSet(old, new)
 
-    fun Node<E>.processRemovingElement() {
+    private fun Node<E>.processRemovingElement() {
         this.counter.set(-1)
         val nextNode = next.get()
         nextNode?.previous?.compareAndSet(this, formerPreviousNode.get())

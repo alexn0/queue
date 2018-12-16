@@ -15,7 +15,7 @@ open class CommonQueue<E>(
         private val timeout: Long = 1000,
         private val batchSize: Int = 300) : BasicQueue<E> {
 
-    val resendingStatuses = arrayOf(RESENDING, RESENDING_FINISHED, RESENDING_FINISHED_COMPLETED)
+    private val resendingStatuses = arrayOf(RESENDING, RESENDING_FINISHED, RESENDING_FINISHED_COMPLETED)
 
     fun put(item: E) {
         val newNode = createNode(item, null, timeout)
@@ -116,7 +116,7 @@ open class CommonQueue<E>(
         val sent = now()
         do {
             val previous = node
-            node.getNext().let { if (it != null) node = it else return result}
+            node.getNext().let { if (it != null) node = it else return result }
             updateProcessedElement(node, sent, previous)
             val status = node.status.get()
             if (status in resendingStatuses) {
@@ -131,7 +131,7 @@ open class CommonQueue<E>(
         return result
     }
 
-    fun updateProcessedElement(node: Node<E>, sent: java.time.Instant, previous: Node<E>): Node<E> {
+    private fun updateProcessedElement(node: Node<E>, sent: java.time.Instant, previous: Node<E>): Node<E> {
         node.sent.set(sent)
         node.resent.set(null)
         node.previous.compareAndSet(null, previous)
@@ -140,7 +140,7 @@ open class CommonQueue<E>(
         return node
     }
 
-    fun updateBatchCounters(newNode: Node<E>, curTail: Node<E>, batchSize: Int) {
+    private fun updateBatchCounters(newNode: Node<E>, curTail: Node<E>, batchSize: Int) {
         with(newNode) {
             counter.set(curTail.counter.get() + 1)
             val currentValue = counter.get()
@@ -155,7 +155,7 @@ open class CommonQueue<E>(
         }
     }
 
-    fun updateBatchLink(newNode: Node<E>, curTail: Node<E>?) {
+    private fun updateBatchLink(newNode: Node<E>, curTail: Node<E>?) {
         with(newNode) {
             nextBatch.get().compareAndSet(curTail, this)
         }

@@ -8,14 +8,14 @@ import java.util.concurrent.ConcurrentHashMap
 abstract class CommonMessageBroker : MessageBroker<CommonMessage> {
     private val map = ConcurrentHashMap<String, BaseQueue<BasicMessage>>()
 
-    fun getQueue(queueName: String): BaseQueue<BasicMessage> {
+    private fun getQueue(queueName: String): BaseQueue<BasicMessage> {
         if (!map.containsKey(queueName)) {
             map.putIfAbsent(queueName, createBasicQueue(queueName))
         }
         return map[queueName]!!
     }
 
-    abstract protected fun createBasicQueue(queueName: String): BaseQueue<BasicMessage>
+    protected abstract fun createBasicQueue(queueName: String): BaseQueue<BasicMessage>
 
     override fun send(queue: String, message: String): String {
         val baseQueue = getQueue(queue)
