@@ -6,7 +6,7 @@
 ./gradlew jar
 ```
 
-####Architecture of the solution
+#### Architecture of the solution
 
 The algorithm we use is a modification of Michael & Scott's lock-free queue algorithm.
 Steps of the algorithm:
